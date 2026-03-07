@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { buildICPContextString } from "@/lib/icp-context";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -56,6 +58,31 @@ export async function POST(request: NextRequest) {
   try {
     const { messages } = await request.json();
 
+    // ── Auth + subscription check ──
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return new Response("Unauthorized", { status: 401 });
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("subscription_status")
+      .eq("id", user.id)
+      .single();
+
+    const isActive =
+      profile?.subscription_status === "active" ||
+      profile?.subscription_status === "trialing";
+    if (!isActive) return new Response("Subscription required", { status: 402 });
+
+    // ── Fetch ICP for context ──
+    const { data: icpDoc } = await supabase
+      .from("icp_documents")
+      .select("*")
+      .eq("user_id", user.id)
+      .single();
+
+    const icpContext = buildICPContextString(icpDoc);
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return new Response("ANTHROPIC_API_KEY saknas i miljövariablerna.", {
@@ -69,10 +96,13 @@ export async function POST(request: NextRequest) {
     const readable = new ReadableStream({
       async start(controller) {
         try {
+          const enrichedSystem = ORCHESTRATOR_SYSTEM_PROMPT +
+            (icpContext ? "\n\n" + icpContext : "");
+
           const stream = await client.messages.create({
             model: "claude-sonnet-4-5-20250929",
             max_tokens: 8192,
-            system: ORCHESTRATOR_SYSTEM_PROMPT,
+            system: enrichedSystem,
             messages,
             stream: true,
           });

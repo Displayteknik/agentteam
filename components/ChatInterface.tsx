@@ -66,7 +66,9 @@ function renderMarkdown(text: string): string {
     .replace(/\n/g, "<br>");
 }
 
-export default function ChatInterface({ agent }: { agent: Agent }) {
+type ResponseMode = "djup" | "kort" | "nasta-steg";
+
+export default function ChatInterface({ agent, responseMode = "djup" }: { agent: Agent; responseMode?: ResponseMode }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -113,6 +115,7 @@ export default function ChatInterface({ agent }: { agent: Agent }) {
         body: JSON.stringify({
           messages: updatedMessages,
           agentSlug: agent.slug,
+          responseMode,
         }),
         signal: controller.signal,
       });
