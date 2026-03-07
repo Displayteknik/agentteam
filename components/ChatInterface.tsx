@@ -106,7 +106,8 @@ export default function ChatInterface({ agent }: { agent: Agent }) {
     abortRef.current = controller;
 
     try {
-      const response = await fetch("/api/chat", {
+      const endpoint = agent.isOrchestrator ? "/api/orchestrate" : "/api/chat";
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -218,19 +219,48 @@ export default function ChatInterface({ agent }: { agent: Agent }) {
                   marginBottom: "0.5rem",
                 }}
               >
-                Hej! Jag är {agent.name}
+                {agent.isOrchestrator ? "Projektledaren" : `Hej! Jag är ${agent.name}`}
               </h2>
               <p
                 style={{
                   color: "#9ca3af",
                   fontSize: "0.95rem",
-                  maxWidth: 440,
+                  maxWidth: agent.isOrchestrator ? 560 : 440,
                   margin: "0 auto 1.5rem",
                   lineHeight: 1.6,
                 }}
               >
-                {agent.description}
+                {agent.isOrchestrator
+                  ? "Beskriv ditt projekt eller kampanj. Jag analyserar vad som behövs, aktiverar rätt specialister ur teamet och levererar ett komplett marknadsföringspaket — automatiskt."
+                  : agent.description}
               </p>
+              {agent.isOrchestrator && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "0.5rem",
+                    justifyContent: "center",
+                    marginBottom: "1.25rem",
+                  }}
+                >
+                  {["🎯 Strategen", "✍️ Copywritern", "📈 SEO-Experten", "📱 SoMe-Managern", "💰 Annons-Specialisten", "📊 Data-Analytikern"].map((name) => (
+                    <span
+                      key={name}
+                      style={{
+                        fontSize: "0.8rem",
+                        padding: "0.3rem 0.75rem",
+                        borderRadius: 8,
+                        background: "rgba(249,115,22,0.08)",
+                        border: "1px solid rgba(249,115,22,0.2)",
+                        color: "#fb923c",
+                      }}
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div
                 style={{
                   display: "flex",
@@ -239,7 +269,7 @@ export default function ChatInterface({ agent }: { agent: Agent }) {
                   justifyContent: "center",
                 }}
               >
-                {agent.capabilities.map((cap) => (
+                {!agent.isOrchestrator && agent.capabilities.map((cap) => (
                   <span
                     key={cap}
                     style={{
@@ -294,7 +324,7 @@ export default function ChatInterface({ agent }: { agent: Agent }) {
                 {/* Bubble */}
                 <div
                   style={{
-                    maxWidth: "82%",
+                    maxWidth: msg.role === "assistant" && agent.isOrchestrator ? "100%" : "82%",
                     borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
                     padding: "0.9rem 1.1rem",
                     background:
@@ -497,7 +527,9 @@ export default function ChatInterface({ agent }: { agent: Agent }) {
               marginTop: "0.5rem",
             }}
           >
-            Enter = skicka · Shift+Enter = ny rad
+            {agent.isOrchestrator
+              ? "Enter = skicka · Shift+Enter = ny rad · Orkestratorn tar 30–60 sek"
+              : "Enter = skicka · Shift+Enter = ny rad"}
           </p>
         </div>
       </div>

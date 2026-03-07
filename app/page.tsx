@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { agents } from "@/lib/agents";
+import { agents, Agent } from "@/lib/agents";
 
 export default function Home() {
   return (
@@ -117,7 +117,7 @@ export default function Home() {
               display: "inline-block",
             }}
           />
-          6 agenter online och redo
+          7 agenter online och redo
         </div>
 
         <h1
@@ -147,7 +147,75 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Agent Grid */}
+      {/* ── Orchestrator Hero Card ── */}
+      {(() => {
+        const orchestrator = agents.find((a) => a.isOrchestrator);
+        if (!orchestrator) return null;
+        return (
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 1.5rem 2rem" }}>
+            <Link href={`/agent/${orchestrator.slug}`} style={{ textDecoration: "none" }}>
+              <div
+                style={{
+                  position: "relative",
+                  padding: "2rem 2.25rem",
+                  borderRadius: 20,
+                  background: "linear-gradient(135deg, #1a0f05 0%, #121214 60%)",
+                  border: "1px solid rgba(249,115,22,0.25)",
+                  cursor: "pointer",
+                  overflow: "hidden",
+                  transition: "border-color 0.2s, transform 0.15s, box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(249,115,22,0.5)";
+                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = "0 12px 48px rgba(249,115,22,0.12)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(249,115,22,0.25)";
+                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+                }}
+              >
+                {/* Top glow line */}
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, #f97316, #fb923c, transparent)" }} />
+                {/* Background glow */}
+                <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(249,115,22,0.06)", filter: "blur(40px)", pointerEvents: "none" }} />
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1.5rem", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
+                    <div style={{ width: 60, height: 60, borderRadius: 16, background: "rgba(249,115,22,0.15)", border: "1px solid rgba(249,115,22,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.8rem", flexShrink: 0 }}>
+                      {orchestrator.icon}
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.25rem" }}>
+                        <span style={{ fontWeight: 900, fontSize: "1.2rem", color: "#ffffff" }}>{orchestrator.name}</span>
+                        <span style={{ fontSize: "0.7rem", padding: "0.2rem 0.6rem", borderRadius: 99, background: "rgba(249,115,22,0.15)", border: "1px solid rgba(249,115,22,0.3)", color: "#fb923c", fontWeight: 700, letterSpacing: "0.05em" }}>HELA TEAMET</span>
+                      </div>
+                      <p style={{ fontSize: "0.9rem", color: "#9ca3af", margin: 0, lineHeight: 1.5 }}>
+                        Beskriv ett projekt — jag aktiverar rätt specialister automatiskt och levererar ett komplett paket.
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", alignItems: "center" }}>
+                    {["🎯 Strategen", "✍️ Copy", "📈 SEO", "📱 SoMe", "💰 Ads", "📊 Data"].map((tag) => (
+                      <span key={tag} style={{ fontSize: "0.75rem", padding: "0.25rem 0.6rem", borderRadius: 6, background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.15)", color: "#fb923c" }}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        );
+      })()}
+
+      {/* ── Divider ── */}
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 1.5rem 1.5rem" }}>
+        <p style={{ fontSize: "0.78rem", color: "#374151", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          Eller prata med en specialist direkt
+        </p>
+      </div>
+
+      {/* ── Specialist Grid ── */}
       <div
         style={{
           maxWidth: 1100,
@@ -158,7 +226,7 @@ export default function Home() {
           gap: "1.25rem",
         }}
       >
-        {agents.map((agent) => (
+        {agents.filter((a: Agent) => !a.isOrchestrator).map((agent: Agent) => (
           <Link
             key={agent.slug}
             href={`/agent/${agent.slug}`}
@@ -199,17 +267,7 @@ export default function Home() {
               />
 
               {/* Arrow */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "1.5rem",
-                  right: "1.5rem",
-                  color: "#374151",
-                  fontSize: "1.1rem",
-                }}
-              >
-                →
-              </div>
+              <div style={{ position: "absolute", top: "1.5rem", right: "1.5rem", color: "#374151", fontSize: "1.1rem" }}>→</div>
 
               {/* Icon */}
               <div
@@ -230,55 +288,16 @@ export default function Home() {
               </div>
 
               {/* Name & title */}
-              <div
-                style={{
-                  fontWeight: 800,
-                  fontSize: "1.1rem",
-                  color: "#ffffff",
-                  marginBottom: "0.2rem",
-                }}
-              >
-                {agent.name}
-              </div>
-              <div
-                style={{
-                  fontSize: "0.72rem",
-                  color: "#6b7280",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  marginBottom: "0.85rem",
-                }}
-              >
-                {agent.title}
-              </div>
+              <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#ffffff", marginBottom: "0.2rem" }}>{agent.name}</div>
+              <div style={{ fontSize: "0.72rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.85rem" }}>{agent.title}</div>
 
               {/* Description */}
-              <p
-                style={{
-                  fontSize: "0.9rem",
-                  color: "#9ca3af",
-                  lineHeight: 1.6,
-                  marginBottom: "1.25rem",
-                }}
-              >
-                {agent.description}
-              </p>
+              <p style={{ fontSize: "0.9rem", color: "#9ca3af", lineHeight: 1.6, marginBottom: "1.25rem" }}>{agent.description}</p>
 
               {/* Capability tags */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
                 {agent.capabilities.map((cap) => (
-                  <span
-                    key={cap}
-                    style={{
-                      fontSize: "0.75rem",
-                      padding: "0.25rem 0.65rem",
-                      borderRadius: 6,
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      color: "#6b7280",
-                    }}
-                  >
+                  <span key={cap} style={{ fontSize: "0.75rem", padding: "0.25rem 0.65rem", borderRadius: 6, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#6b7280" }}>
                     {cap}
                   </span>
                 ))}

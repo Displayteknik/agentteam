@@ -8,9 +8,29 @@ export interface Agent {
   systemPrompt: string;
   placeholder: string;
   capabilities: string[];
+  isOrchestrator?: boolean;
 }
 
 export const agents: Agent[] = [
+  {
+    slug: "projektledaren",
+    name: "Projektledaren",
+    title: "AI Orchestrator — Hela Teamet",
+    description:
+      "Beskriv ett projekt. Jag analyserar, väljer rätt specialister och koordinerar hela teamet automatiskt.",
+    icon: "🚀",
+    color: "#f97316",
+    isOrchestrator: true,
+    capabilities: [
+      "Hela teamet koordinerat",
+      "Strategi + Copy + SEO",
+      "SoMe + Annonser + Analys",
+      "Automatisk delegation",
+    ],
+    placeholder:
+      "Beskriv ditt projekt eller kampanj — jag koordinerar rätt specialister och levererar ett komplett paket...",
+    systemPrompt: "",
+  },
   {
     slug: "strategen",
     name: "Strategen",
