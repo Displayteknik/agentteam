@@ -19,8 +19,9 @@ export default async function DashboardPage() {
   const icp = icpRes.data;
   const steps = progressRes.data ?? [];
 
-  // Subscription check — allow 'active' and 'trialing'
-  const isActive = profile?.subscription_status === "active" || profile?.subscription_status === "trialing";
+  // Subscription check — allow 'active', 'trialing', or admin email
+  const isAdmin = user.email?.toLowerCase() === (process.env.ADMIN_EMAIL ?? "").toLowerCase();
+  const isActive = isAdmin || profile?.subscription_status === "active" || profile?.subscription_status === "trialing";
   if (!isActive) redirect("/subscribe");
 
   const firstName = profile?.full_name?.split(" ")[0] ?? "där";

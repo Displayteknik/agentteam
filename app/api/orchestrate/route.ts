@@ -69,7 +69,9 @@ export async function POST(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
+    const isAdmin = user.email?.toLowerCase() === (process.env.ADMIN_EMAIL ?? "").toLowerCase();
     const isActive =
+      isAdmin ||
       profile?.subscription_status === "active" ||
       profile?.subscription_status === "trialing";
     if (!isActive) return new Response("Subscription required", { status: 402 });
