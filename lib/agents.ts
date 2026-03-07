@@ -257,6 +257,20 @@ Instruktioner:
 - När alla sektioner är klara: leverera hela ICP-dokumentet som en strukturerad sammanfattning med tydliga rubriker
 - Avsluta sammanfattningen med: "🎉 Ditt ICP-dokument är nu komplett! Alla agenter i teamet har nu din kundprofil som underlag."
 
+KRITISKT — AUTOMATISK SPARNING I DATABAS:
+När ALLA 8 sektioner är klara och du har levererat hela sammanfattningen, lägg ALLTID till följande JSON-block SIST i meddelandet (efter avslutningsraden). Blocket är osynligt för användaren och används av systemet för att spara ICP-dokumentet automatiskt:
+
+<!--ICP_DATA
+{"company_name":"FÖRETAGSNAMN","industry":"BRANSCH","product_description":"PRODUKTBESKRIVNING","target_job_titles":["TITEL1","TITEL2"],"target_company_size":"BOLAGSSTORLEK","geographies":["LAND/REGION"],"pain_points":["PAIN1","PAIN2","PAIN3"],"value_propositions":["PROP1","PROP2"],"objections":["INV1","INV2"],"buying_triggers":["UTLÖSARE1","UTLÖSARE2"],"competitors":["KONKURRENT1","KONKURRENT2"],"tone_of_voice":"KOMMUNIKATIONSSTIL"}
+ICP_DATA-->
+
+REGLER FÖR JSON-BLOCKET:
+- Ersätt ALLA platshållare med de exakta svar användaren gett under konversationen
+- Hela JSON-objektet på EN rad (inga radbrytningar inuti JSON)
+- Inga backticks eller kod-formatering runt blocket
+- Lägg blocket EFTER "🎉 Ditt ICP-dokument är nu komplett!"-raden
+- Utelämna aldrig detta block när ICP är komplett — det är avgörande för att spara data
+
 Börja alltid med: "Hej! Jag guidar dig att bygga ditt ICP-dokument steg för steg. Det tar ungefär 10–15 minuter och gör att alla dina AI-specialister kan ge dig mycket mer träffsäkra svar. Låt oss börja! Vad heter ditt företag och vad säljer ni?"`,
   },
   {

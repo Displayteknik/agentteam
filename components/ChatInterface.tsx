@@ -72,6 +72,8 @@ export default function ChatInterface({ agent, responseMode = "djup" }: { agent:
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [icpSaved, setIcpSaved] = useState(false);
+  const [icpSaving, setIcpSaving] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -135,14 +137,39 @@ export default function ChatInterface({ agent, responseMode = "djup" }: { agent:
         const { done, value } = await reader.read();
         if (done) break;
         accumulated += decoder.decode(value, { stream: true });
+        // Strip ICP_DATA block from live display while streaming
+        const displayContent = accumulated.replace(/<!--ICP_DATA[\s\S]*?ICP_DATA-->/g, "").trim();
         setMessages((prev) => {
           const updated = [...prev];
           updated[assistantIndex] = {
             role: "assistant",
-            content: accumulated,
+            content: displayContent,
           };
           return updated;
         });
+      }
+
+      // ── Auto-save ICP if this is the ICP-Dokumentören ──
+      if (agent.slug === "icp-dokumentoren" && accumulated.includes("<!--ICP_DATA")) {
+        const match = accumulated.match(/<!--ICP_DATA\s*([\s\S]+?)\s*ICP_DATA-->/);
+        if (match) {
+          try {
+            setIcpSaving(true);
+            const icpData = JSON.parse(match[1]);
+            const saveRes = await fetch("/api/icp", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(icpData),
+            });
+            if (saveRes.ok) {
+              setIcpSaved(true);
+            }
+          } catch {
+            // Silent fail — conversation was still helpful even if save failed
+          } finally {
+            setIcpSaving(false);
+          }
+        }
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return;
@@ -401,6 +428,37 @@ export default function ChatInterface({ agent, responseMode = "djup" }: { agent:
         }}
       >
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
+
+          {/* ICP saved banner */}
+          {icpSaved && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: "0.6rem",
+              padding: "0.7rem 1rem", borderRadius: 12, marginBottom: "0.75rem",
+              background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)",
+            }}>
+              <span style={{ fontSize: "1.1rem" }}>✅</span>
+              <div>
+                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#10b981" }}>
+                  ICP-dokument sparat!
+                </span>
+                <span style={{ fontSize: "0.82rem", color: "#6b7280", marginLeft: "0.4rem" }}>
+                  Alla agenter har nu din kundprofil som underlag.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ICP saving indicator */}
+          {icpSaving && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: "0.6rem",
+              padding: "0.6rem 1rem", borderRadius: 12, marginBottom: "0.75rem",
+              background: "rgba(20,184,166,0.08)", border: "1px solid rgba(20,184,166,0.2)",
+            }}>
+              <span style={{ fontSize: "0.82rem", color: "#14b8a6" }}>💾 Sparar ICP-dokument...</span>
+            </div>
+          )}
+
           {/* Controls row */}
           {messages.length > 0 && (
             <div
