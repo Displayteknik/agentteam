@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #0a0a0b;
+  color: #f3f4f6;
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #111113;
+}
+::-webkit-scrollbar-thumb {
+  background: #2d2d35;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6366f1;
+}
+
+/* Blinking cursor for streaming */
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+.cursor-blink {
+  display: inline-block;
+  width: 2px;
+  height: 16px;
+  background: #a5b4fc;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: blink 1s step-end infinite;
+}
+
+/* Prose / markdown styles */
+.prose-agent h1,
+.prose-agent h2,
+.prose-agent h3,
+.prose-agent h4 {
+  color: #ffffff;
+  font-weight: 700;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+.prose-agent h1 { font-size: 1.3rem; }
+.prose-agent h2 { font-size: 1.15rem; }
+.prose-agent h3 { font-size: 1rem; }
+.prose-agent p {
+  margin-bottom: 0.75em;
+  line-height: 1.65;
+  color: #d1d5db;
+}
+.prose-agent ul,
+.prose-agent ol {
+  margin: 0.75em 0;
+  padding-left: 1.5em;
+  color: #d1d5db;
+}
+.prose-agent li {
+  margin-bottom: 0.35em;
+  line-height: 1.6;
+}
+.prose-agent strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+.prose-agent em {
+  color: #e5e7eb;
+}
+.prose-agent code {
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+.prose-agent pre {
+  background: #111113;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+.prose-agent pre code {
+  background: none;
+  color: #e5e7eb;
+  padding: 0;
+  font-size: 0.85rem;
+}
+.prose-agent table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.9rem;
+}
+.prose-agent th {
+  background: rgba(99, 102, 241, 0.1);
+  color: #ffffff;
+  font-weight: 600;
+  padding: 0.6em 0.9em;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+}
+.prose-agent td {
+  padding: 0.55em 0.9em;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #d1d5db;
+}
+.prose-agent tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+.prose-agent blockquote {
+  border-left: 3px solid #6366f1;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  background: rgba(99, 102, 241, 0.06);
+  border-radius: 0 8px 8px 0;
+  color: #e5e7eb;
+}
+.prose-agent hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 1.5em 0;
+}
+.prose-agent a {
+  color: #a5b4fc;
+  text-decoration: underline;
+}
