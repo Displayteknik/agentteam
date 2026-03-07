@@ -5,10 +5,6 @@ import { NextRequest } from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
 export async function POST(request: NextRequest) {
   try {
     const { messages, agentSlug } = await request.json();
@@ -18,33 +14,40 @@ export async function POST(request: NextRequest) {
       return new Response("Agent not found", { status: 404 });
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
       return new Response("ANTHROPIC_API_KEY saknas i miljövariablerna.", {
         status: 500,
       });
     }
 
-    const stream = client.messages.stream({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 4096,
-      system: agent.systemPrompt,
-      messages,
-    });
+    // Create client inside handler so env var is resolved at runtime
+    const client = new Anthropic({ apiKey });
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of stream) {
+          const stream = await client.messages.create({
+            model: "claude-sonnet-4-5-20250929",
+            max_tokens: 4096,
+            system: agent.systemPrompt,
+            messages,
+            stream: true,
+          });
+
+          for await (const event of stream) {
             if (
-              chunk.type === "content_block_delta" &&
-              chunk.delta.type === "text_delta"
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
             ) {
-              controller.enqueue(encoder.encode(chunk.delta.text));
+              controller.enqueue(encoder.encode(event.delta.text));
             }
           }
         } catch (err) {
-          controller.error(err);
+          // Write error into stream so client sees it
+          const msg = err instanceof Error ? err.message : String(err);
+          controller.enqueue(encoder.encode(`⚠️ Fel: ${msg}`));
         } finally {
           controller.close();
         }
@@ -59,7 +62,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Chat API error:", error);
-    return new Response("Internal server error", { status: 500 });
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    console.error("Chat API error:", msg);
+    return new Response(`Server error: ${msg}`, { status: 500 });
   }
 }
