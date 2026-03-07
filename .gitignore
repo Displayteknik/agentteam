@@ -9,3 +9,5 @@ yarn-error.log
 Thumbs.db
 .netlify/
 out/
+*.bak
+deno.lock
