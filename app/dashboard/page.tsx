@@ -17,7 +17,29 @@ export default async function DashboardPage() {
 
   const profile = profileRes.data;
   const icp = icpRes.data;
-  const steps = progressRes.data ?? [];
+  let steps = progressRes.data ?? [];
+
+  // Auto-create progress steps if missing (handles accounts created before trigger was set up)
+  if (steps.length === 0) {
+    await supabase.from("progress_steps").insert([
+      { user_id: user.id, step_number: 1, step_key: "onboarding_complete", title: "Prenumeration aktiverad", description: "Ditt konto är aktivt och redo att användas", step_order: 1 },
+      { user_id: user.id, step_number: 2, step_key: "icp_started", title: "ICP-Dokumentören startad", description: "Du har börjat bygga din kundprofil", step_order: 2 },
+      { user_id: user.id, step_number: 3, step_key: "icp_basics_done", title: "Grundinfo ifylld", description: "Företag, bransch och produkt klart", step_order: 3 },
+      { user_id: user.id, step_number: 4, step_key: "icp_persona_done", title: "Målperson definierad", description: "Jobbtitlar och företagsstorlek klart", step_order: 4 },
+      { user_id: user.id, step_number: 5, step_key: "icp_pain_points_done", title: "Smärtpunkter kartlagda", description: "Utmaningar och problem dokumenterade", step_order: 5 },
+      { user_id: user.id, step_number: 6, step_key: "icp_completed", title: "ICP-Dokument 100% klart", description: "Din kompletta kundprofil är färdig", step_order: 6 },
+      { user_id: user.id, step_number: 7, step_key: "first_strategy", title: "Första strategi skapad", description: "Med hjälp av Strategen", step_order: 7 },
+      { user_id: user.id, step_number: 8, step_key: "first_content", title: "Första innehåll skapat", description: "Med hjälp av Copywritern", step_order: 8 },
+      { user_id: user.id, step_number: 9, step_key: "first_campaign", title: "Första kampanj lanserad", description: "Med hjälp av Annons-Specialisten", step_order: 9 },
+      { user_id: user.id, step_number: 10, step_key: "first_analysis", title: "Första analys gjord", description: "Med hjälp av Data-Analytikern", step_order: 10 },
+    ]);
+    const { data: freshSteps } = await supabase
+      .from("progress_steps")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("step_number");
+    steps = freshSteps ?? [];
+  }
 
   // Subscription check — allow 'active', 'trialing', or admin email
   const isAdmin = user.email?.toLowerCase() === (process.env.ADMIN_EMAIL ?? "").toLowerCase();
