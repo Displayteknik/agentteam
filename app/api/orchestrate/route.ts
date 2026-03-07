@@ -1,69 +1,56 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { agents, getAgent } from "@/lib/agents";
 import { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const ORCHESTRATOR_SYSTEM_PROMPT = `Du är Projektledaren – GripCoachings AI-orkestratör och marknadsföringsdirektör.
+// Single-stream orchestrator — one API call, no silent gaps, no timeouts.
+// The orchestrator embodies all 6 specialists and streams continuously.
+const ORCHESTRATOR_SYSTEM_PROMPT = `Du är Projektledaren — en senior marknadsföringsdirektör med full kompetens som alla sex specialister i teamet:
 
-Ditt jobb är att analysera ett marknadsföringsprojekt och delegera det till rätt specialister i teamet. Välj BARA de agenter som faktiskt behövs och briefar dem noggrant.
+🎯 STRATEGEN: 15+ års erfarenhet av marknadsstrategi, positionering, go-to-market, KPI-ramverk, konkurrentanalys och budgetallokering på den svenska marknaden.
 
-DITT TEAM:
-• Strategen – Marknadsföringsstrategi, KPI:er, positionering, go-to-market, konkurrentanalys. Kalla vid: kampanjplanering, lansering, ny produkt/tjänst, tillväxtmål.
-• Copywritern – E-post, landningssidor, blogginlägg, annonstexter, säljbrev. Kalla vid: text behövs, copy, innehåll att skriva.
-• SEO-Experten – Sökordsanalys, on-page SEO, meta-texter, innehållsstrategi. Kalla vid: SEO, Google-synlighet, sökord, organisk trafik.
-• SoMe-Managern – LinkedIn, Instagram, Facebook-inlägg, innehållskalender, hashtags. Kalla vid: sociala medier, inlägg, kalender, SoMe.
-• Annons-Specialisten – Google Ads, Meta Ads, kampanjstruktur, annonstexter, budgetstrategi. Kalla vid: betald annonsering, ads, kampanj, budget.
-• Data-Analytikern – KPI-ramverk, mätplan, GA4-analys, uppföljningsstruktur. Kalla vid: mätning, analys, KPI:er, data, uppföljning.
+✍️ COPYWRITERN: Expert på säljande, konverteringsinriktade texter — landningssidor, e-postsekvenser, annonstexter, blogginlägg, sociala medier-captions och säljbrev. Levererar alltid FÄRDIGA texter, inte råd.
 
-INSTRUKTIONER:
-1. Börja med en kort analys (2–3 meningar) av vad uppdraget kräver och vilka specialister du aktiverar
-2. Välj 2–5 agenter – aldrig fler än nödvändigt för just detta uppdrag
-3. Ge varje agent en DETALJERAD brief (inkludera: vad projektet är, målgrupp, mål, ton, och kontext från andra agenter om relevant)
-4. Kalla alltid Strategen FÖRST vid stora eller nya projekt – inkludera sedan strategin i alla efterföljande agenters brief
-5. Avsluta med en kort sammanfattning av vad som levererats
+📈 SEO-EXPERTEN: Djup kunskap om Googles algoritmer, sökordsanalys, on-page SEO, title tags, meta descriptions, innehållsstrategi och lokal SEO för den svenska marknaden.
 
-Svara alltid på svenska.`;
+📱 SOME-MANAGERN: Skapar färdiga, plattformsanpassade inlägg för LinkedIn, Instagram och Facebook — med hashtags, publiceringstider och CTA. Producerar redaktionella kalendrar.
 
-// Build tool definitions from the 6 specialist agents (not the orchestrator itself)
-const agentTools: Anthropic.Tool[] = agents
-  .filter((a) => !a.isOrchestrator)
-  .map((agent) => ({
-    name: `call_${agent.slug.replace(/-/g, "_")}`,
-    description: `${agent.name} (${agent.title}): ${agent.description}`,
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        brief: {
-          type: "string",
-          description: `Detaljerad brief för ${agent.name}. Inkludera all relevant kontext, målgrupp, mål och specifika önskemål.`,
-        },
-      },
-      required: ["brief"],
-    },
-  }));
+💰 ANNONS-SPECIALISTEN: Expert på Google Ads (Search, Display, Shopping, PMax), Meta Ads (Facebook/Instagram), kampanjstrukturer, A/B-testdesign, budgetstrategi och targeting.
 
-async function callSubAgent(slug: string, brief: string): Promise<string> {
-  const agent = getAgent(slug);
-  if (!agent) return `⚠️ Agent "${slug}" hittades inte.`;
+📊 DATA-ANALYTIKERN: Omvandlar komplex data till actionable insikter. Analyserar GA4, Meta Analytics, KPI:er, konverteringsrater och presenterar prioriterade rekommendationer.
 
-  const apiKey = process.env.ANTHROPIC_API_KEY!;
-  const client = new Anthropic({ apiKey });
+─────────────────────────────────────────────────
 
-  try {
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-5-20250929",
-      max_tokens: 2048,
-      system: agent.systemPrompt,
-      messages: [{ role: "user", content: brief }],
-    });
-    return response.content[0].type === "text" ? response.content[0].text : "";
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return `⚠️ Fel från ${agent.name}: ${msg}`;
-  }
-}
+INSTRUKTIONER FÖR VARJE UPPDRAG:
+
+1. Börja med 2–3 meningar: analysera projektet och nämn vilka specialister du aktiverar.
+
+2. Skriv sedan "*Aktiverar: [lista med ikoner och namn]*" på en egen rad.
+
+3. Leverera sedan output från varje relevant specialist under tydlig rubrik:
+   ## 🎯 Strategen
+   ## ✍️ Copywritern
+   ## 📈 SEO-Experten
+   ## 📱 SoMe-Managern
+   ## 💰 Annons-Specialisten
+   ## 📊 Data-Analytikern
+
+4. Välj BARA de specialister som faktiskt behövs för just detta uppdrag (2–5 st). Inte alla sex om det inte krävs.
+
+5. Varje specialists output ska vara FÄRDIG och KLAR ATT ANVÄNDA — inte råd eller guider, utan faktiska texter, planer, tabeller och listor.
+
+6. Avsluta med:
+   ## 📋 Projektledarens sammanfattning
+   En kort sammanfattning av vad som levererats och vad nästa steg är.
+
+─────────────────────────────────────────────────
+
+KVALITETSKRAV:
+- Allt på svenska om inget annat anges
+- Specifikt och handlingsorienterat — inga vaga råd
+- Redo att klistra in och använda direkt
+- Anpassa djup och längd efter projektets komplexitet`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,102 +68,26 @@ export async function POST(request: NextRequest) {
 
     const readable = new ReadableStream({
       async start(controller) {
-        const send = (text: string) => {
-          controller.enqueue(encoder.encode(text));
-        };
-
         try {
-          const orchestratorMessages: Anthropic.MessageParam[] = messages;
-
-          // ── Step 1: Let the orchestrator analyze and decide which agents to call ──
-          const planResponse = await client.messages.create({
+          const stream = await client.messages.create({
             model: "claude-sonnet-4-5-20250929",
-            max_tokens: 4096,
+            max_tokens: 8192,
             system: ORCHESTRATOR_SYSTEM_PROMPT,
-            messages: orchestratorMessages,
-            tools: agentTools,
-            tool_choice: { type: "auto" },
+            messages,
+            stream: true,
           });
 
-          // Stream any text from the orchestrator (its analysis)
-          for (const block of planResponse.content) {
-            if (block.type === "text" && block.text) {
-              send(block.text);
-            }
-          }
-
-          if (planResponse.stop_reason === "tool_use") {
-            const toolUseBlocks = planResponse.content.filter(
-              (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
-            );
-
-            // Announce which agents are being activated
-            const agentList = toolUseBlocks
-              .map((t) => {
-                const slug = t.name.replace("call_", "").replace(/_/g, "-");
-                const ag = getAgent(slug);
-                return `${ag?.icon} ${ag?.name}`;
-              })
-              .join("  ·  ");
-
-            send(`\n\n*Aktiverar: ${agentList}*\n`);
-
-            // ── Step 2: Call all agents in parallel ──
-            const results = await Promise.all(
-              toolUseBlocks.map(async (toolUse) => {
-                const agentSlug = toolUse.name
-                  .replace("call_", "")
-                  .replace(/_/g, "-");
-                const brief = (toolUse.input as { brief: string }).brief;
-                const result = await callSubAgent(agentSlug, brief);
-                return { agentSlug, result, id: toolUse.id };
-              })
-            );
-
-            // ── Step 3: Stream results in order ──
-            for (const { agentSlug, result } of results) {
-              const agentInfo = getAgent(agentSlug);
-              send(
-                `\n\n---\n\n## ${agentInfo?.icon ?? "🤖"} ${agentInfo?.name ?? agentSlug}\n\n`
-              );
-              send(result);
-            }
-
-            // ── Step 4: Ask orchestrator for a final summary ──
-            orchestratorMessages.push({
-              role: "assistant",
-              content: planResponse.content,
-            });
-            orchestratorMessages.push({
-              role: "user",
-              content: results.map((r) => ({
-                type: "tool_result" as const,
-                tool_use_id: r.id,
-                content: r.result,
-              })),
-            });
-
-            const summaryResponse = await client.messages.create({
-              model: "claude-sonnet-4-5-20250929",
-              max_tokens: 512,
-              system: ORCHESTRATOR_SYSTEM_PROMPT,
-              messages: orchestratorMessages,
-              tools: agentTools,
-            });
-
-            const summaryText = summaryResponse.content
-              .filter((b): b is Anthropic.TextBlock => b.type === "text")
-              .map((b) => b.text)
-              .join("");
-
-            if (summaryText.trim()) {
-              send("\n\n---\n\n## 📋 Projektledarens sammanfattning\n\n");
-              send(summaryText);
+          for await (const event of stream) {
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              controller.enqueue(encoder.encode(event.delta.text));
             }
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          send(`\n\n⚠️ Fel: ${msg}`);
+          controller.enqueue(encoder.encode(`\n\n⚠️ Fel: ${msg}`));
         } finally {
           controller.close();
         }
