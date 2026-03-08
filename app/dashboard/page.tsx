@@ -91,7 +91,7 @@ export default async function DashboardPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem", marginBottom: "2rem" }}>
 
           {/* ICP Card */}
-          <Link href="/agent/icp-dokumentoren" style={{ textDecoration: "none" }}>
+          <Link href="/icp" style={{ textDecoration: "none" }}>
             <div style={{ padding: "1.5rem", borderRadius: 18, background: "#111113", border: `1px solid ${icpPct >= 100 ? "rgba(20,184,166,0.3)" : "rgba(249,115,22,0.25)"}`, cursor: "pointer", position: "relative", overflow: "hidden", transition: "border-color 0.2s" }}>
               <div style={{ height: 2, position: "absolute", top: 0, left: 0, right: 0, background: `linear-gradient(90deg, #14b8a6, transparent)` }} />
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
