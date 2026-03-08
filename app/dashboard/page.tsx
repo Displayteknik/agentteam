@@ -8,15 +8,24 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  // Fetch profile, ICP, progress in parallel
-  const [profileRes, icpRes, progressRes] = await Promise.all([
+  // Fetch profile, ICP, progress, and active plan in parallel
+  const [profileRes, icpRes, progressRes, planRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase.from("icp_documents").select("*").eq("user_id", user.id).single(),
     supabase.from("progress_steps").select("*").eq("user_id", user.id).order("step_number"),
+    supabase
+      .from("action_plans")
+      .select("*, action_items(id, xp_value, is_completed)")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const profile = profileRes.data;
   const icp = icpRes.data;
+  const activePlan = planRes.data ?? null;
   let steps = progressRes.data ?? [];
 
   // Auto-create progress steps if missing (handles accounts created before trigger was set up)
@@ -51,6 +60,15 @@ export default async function DashboardPage() {
   const completedSteps = steps.filter((s) => s.is_completed).length;
   const totalSteps = steps.length || 10;
   const overallPct = Math.round((completedSteps / totalSteps) * 100);
+
+  // Plan stats
+  const planItems = activePlan?.action_items ?? [];
+  const planEarnedXp = planItems.filter((i: { is_completed: boolean }) => i.is_completed)
+    .reduce((s: number, i: { xp_value: number }) => s + (i.xp_value ?? 100), 0);
+  const planTotalXp = activePlan?.total_xp ?? 0;
+  const planCompleted = planItems.filter((i: { is_completed: boolean }) => i.is_completed).length;
+  const planTotal = planItems.length;
+  const planPct = planTotal > 0 ? Math.round((planCompleted / planTotal) * 100) : 0;
 
   const specialistAgents = agents.filter((a) => !a.isOrchestrator);
 
@@ -140,6 +158,40 @@ export default async function DashboardPage() {
                   : "Fråga vad du ska fokusera på härnäst i din marknadsföring."}
               </p>
               <div style={{ marginTop: "0.75rem", fontSize: "0.8rem", color: "#f59e0b", fontWeight: 600 }}>Prata med Coachen →</div>
+            </div>
+          </Link>
+
+          {/* Plan card */}
+          <Link href={activePlan ? "/plan" : "/plan/setup"} style={{ textDecoration: "none" }}>
+            <div style={{ padding: "1.5rem", borderRadius: 18, background: activePlan ? "#111113" : "linear-gradient(135deg, #0f0f1a 0%, #111113 100%)", border: `1px solid ${activePlan ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.12)"}`, cursor: "pointer", position: "relative", overflow: "hidden", transition: "border-color 0.2s" }}>
+              <div style={{ height: 2, position: "absolute", top: 0, left: 0, right: 0, background: "linear-gradient(90deg, #6366f1, transparent)" }} />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.9rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                  <span style={{ fontSize: "1.4rem" }}>🗺️</span>
+                  <span style={{ fontWeight: 700, color: "#fff", fontSize: "0.95rem" }}>Handlingsplan</span>
+                </div>
+                {activePlan && (
+                  <span style={{ fontSize: "1.1rem", fontWeight: 900, color: "#6366f1" }}>{planPct}%</span>
+                )}
+              </div>
+              {activePlan ? (
+                <>
+                  <ProgressBar pct={planPct} color="#6366f1" />
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.6rem" }}>
+                    <p style={{ fontSize: "0.78rem", color: "#6b7280", margin: 0 }}>
+                      {planCompleted}/{planTotal} steg · {planEarnedXp}/{planTotalXp} XP
+                    </p>
+                    <span style={{ fontSize: "0.78rem", color: "#6366f1", fontWeight: 600 }}>Öppna →</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: "0.85rem", color: "#6b7280", lineHeight: 1.5, margin: "0 0 0.75rem" }}>
+                    Beskriv ditt mål — AI:n skapar en anpassad plan med 12–16 konkreta steg.
+                  </p>
+                  <div style={{ fontSize: "0.82rem", color: "#6366f1", fontWeight: 600 }}>Skapa din handlingsplan →</div>
+                </>
+              )}
             </div>
           </Link>
         </div>

@@ -53,23 +53,82 @@ export async function POST(request: NextRequest) {
         "\n\n[SVARSLÄGE: NÄSTA STEG — Fokusera enbart på konkreta handlingar. Lista exakt 3–5 specifika saker användaren ska göra härnäst, i prioriteringsordning. Kort och actionable.]";
     }
 
-    // ── Extra context for Coachen: inject progress steps ──
+    // ── Extra context for Coachen: inject progress steps + action plan ──
     let progressContext = "";
     if (agentSlug === "coachen") {
-      const { data: steps } = await supabase
-        .from("progress_steps")
-        .select("step_number, title, is_completed")
-        .eq("user_id", user.id)
-        .order("step_number");
+      const [{ data: steps }, { data: activePlan }] = await Promise.all([
+        supabase
+          .from("progress_steps")
+          .select("step_number, title, is_completed")
+          .eq("user_id", user.id)
+          .order("step_number"),
+        supabase
+          .from("action_plans")
+          .select("*, action_items(item_number, title, description, category, agent_slug, xp_value, is_completed)")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
 
       if (steps?.length) {
         const done = steps.filter((s) => s.is_completed).map((s) => `✓ ${s.title}`);
         const todo = steps.filter((s) => !s.is_completed).map((s) => `○ ${s.title}`);
         progressContext =
           `\n\n─────────────────────────────────────────────────\n` +
-          `ANVÄNDARENS PROGRESS (${done.length}/${steps.length} steg klara):\n` +
+          `ANVÄNDARENS ONBOARDING-PROGRESS (${done.length}/${steps.length} steg klara):\n` +
           `${[...done, ...todo].join("\n")}\n` +
           `─────────────────────────────────────────────────`;
+      }
+
+      if (activePlan) {
+        const planItems = [...(activePlan.action_items ?? [])].sort(
+          (a: { item_number: number }, b: { item_number: number }) => a.item_number - b.item_number
+        );
+        const completedItems = planItems.filter((i: { is_completed: boolean }) => i.is_completed);
+        const incompleteItems = planItems.filter((i: { is_completed: boolean }) => !i.is_completed);
+        const nextStep = incompleteItems[0] ?? null;
+        const earnedXp = completedItems.reduce((s: number, i: { xp_value: number }) => s + i.xp_value, 0);
+
+        progressContext +=
+          `\n\n─────────────────────────────────────────────────\n` +
+          `ANVÄNDARENS HANDLINGSPLAN:\n` +
+          `Mål: "${activePlan.goal_description}"\n` +
+          `Framsteg: ${completedItems.length}/${planItems.length} steg klara · ${earnedXp}/${activePlan.total_xp} XP intjänat\n\n`;
+
+        if (completedItems.length > 0) {
+          progressContext += `Avklarade steg:\n`;
+          completedItems.forEach((i: { item_number: number; title: string }) => {
+            progressContext += `  ✓ #${i.item_number} ${i.title}\n`;
+          });
+        }
+
+        if (nextStep) {
+          progressContext +=
+            `\nNÄSTA STEG (hjälp användaren med detta):\n` +
+            `  → #${nextStep.item_number} ${nextStep.title}\n` +
+            `     ${nextStep.description ?? ""}\n` +
+            `     Agent: ${nextStep.agent_slug}\n`;
+        }
+
+        if (incompleteItems.length > 1) {
+          progressContext += `\nKommande steg:\n`;
+          incompleteItems.slice(1, 4).forEach((i: { item_number: number; title: string }) => {
+            progressContext += `  ○ #${i.item_number} ${i.title}\n`;
+          });
+          if (incompleteItems.length > 4) {
+            progressContext += `  ... och ${incompleteItems.length - 4} steg till\n`;
+          }
+        }
+
+        progressContext += `─────────────────────────────────────────────────`;
+
+        // Coach instruction
+        progressContext +=
+          `\n\n[COACHENS INSTRUKTION: Du känner till användarens exakta handlingsplan och var de befinner sig. ` +
+          `Hälsa dem välkomna och fråga om de vill fortsätta med nästa steg (#${nextStep?.item_number ?? "?"} — ${nextStep?.title ?? "sista steget"}). ` +
+          `Var specifik, uppmuntrande och handlingsorienterad. Påminn dem om hur nära de är sitt mål.]`;
       }
     }
 
