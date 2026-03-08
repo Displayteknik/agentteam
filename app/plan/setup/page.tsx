@@ -67,15 +67,39 @@ export default function PlanSetupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ goal }),
       });
-      clearInterval(interval);
-      if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg);
+
+      // Read streaming response — last non-empty chunk is the JSON result
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let lastChunk = "";
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true }).trim();
+          if (chunk) lastChunk = chunk;
+        }
       }
+
+      clearInterval(interval);
+
+      // Parse result
+      let result: { plan_id?: string; item_count?: number; error?: string } = {};
+      try {
+        result = JSON.parse(lastChunk);
+      } catch {
+        throw new Error("Timeout — servern svarade inte i tid. Försök igen.");
+      }
+
+      if (result.error) throw new Error(result.error);
+      if (!result.plan_id) throw new Error("Ingen plan skapades. Försök igen.");
+
       router.push("/plan");
     } catch (e) {
       clearInterval(interval);
-      setError(e instanceof Error ? e.message : "Något gick fel. Försök igen.");
+      const msg = e instanceof Error ? e.message : "Något gick fel. Försök igen.";
+      // Strip raw HTML if timeout page slipped through
+      setError(msg.includes("<HTML") || msg.includes("<html") ? "Timeout — servern tog för lång tid. Försök igen om en stund." : msg);
       setLoading(false);
       setLoadingStep(0);
     }

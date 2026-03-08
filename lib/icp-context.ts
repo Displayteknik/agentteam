@@ -15,6 +15,7 @@ export interface ICPDocument {
   competitors?: string[] | null;
   tone_of_voice?: string | null;
   existing_channels?: string[] | null;
+  preferred_channels?: string[] | null;
   monthly_budget?: string | null;
   completion_pct?: number;
   ai_summary?: string | null;
@@ -36,6 +37,7 @@ export function buildICPContextString(doc: ICPDocument | null): string {
   if (doc.buying_triggers?.length) lines.push(`Köputlösare: ${doc.buying_triggers.join("; ")}`);
   if (doc.competitors?.length) lines.push(`Konkurrenter: ${doc.competitors.join(", ")}`);
   if (doc.tone_of_voice) lines.push(`Tone of voice: ${doc.tone_of_voice}`);
+  if (doc.preferred_channels?.length) lines.push(`Föredragna marknadsföringskanaler: ${doc.preferred_channels.join(", ")}`);
   if (doc.monthly_budget) lines.push(`Marknadsföringsbudget: ${doc.monthly_budget}`);
 
   if (lines.length === 0) return "";
@@ -60,6 +62,7 @@ export function computeCompletionPct(doc: Partial<ICPDocument>): number {
     doc.value_propositions?.length,
     doc.tone_of_voice,
     doc.competitors?.length,
+    doc.preferred_channels?.length,
   ];
   const filled = fields.filter(Boolean).length;
   return Math.round((filled / fields.length) * 100);

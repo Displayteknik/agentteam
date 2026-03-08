@@ -18,8 +18,21 @@ interface ICPDocument {
   competitors?: string[];
   tone_of_voice?: string;
   monthly_budget?: string;
+  preferred_channels?: string[];
   completion_pct?: number;
 }
+
+const CHANNEL_OPTIONS = [
+  { key: "Facebook", emoji: "📘", label: "Facebook" },
+  { key: "Instagram", emoji: "📸", label: "Instagram" },
+  { key: "LinkedIn", emoji: "💼", label: "LinkedIn" },
+  { key: "Meta Ads", emoji: "🎯", label: "Meta Ads (FB/IG)" },
+  { key: "Google Ads", emoji: "🔍", label: "Google Ads" },
+  { key: "SEO / Blogg", emoji: "📝", label: "SEO / Blogg" },
+  { key: "E-post", emoji: "📧", label: "E-post / Newsletter" },
+  { key: "TikTok", emoji: "🎵", label: "TikTok" },
+  { key: "Vet ej", emoji: "❓", label: "Vet ej ännu" },
+];
 
 function arrToText(arr?: string[]): string {
   return (arr ?? []).join("\n");
@@ -44,6 +57,17 @@ export default function ICPEditor({ icp }: { icp: ICPDocument | null }) {
     tone_of_voice: icp?.tone_of_voice ?? "",
     monthly_budget: icp?.monthly_budget ?? "",
   });
+
+  const [channels, setChannels] = useState<string[]>(icp?.preferred_channels ?? []);
+
+  const toggleChannel = (key: string) => {
+    setChannels((prev) => {
+      if (key === "Vet ej") return prev.includes("Vet ej") ? [] : ["Vet ej"];
+      const without = prev.filter((c) => c !== "Vet ej");
+      return without.includes(key) ? without.filter((c) => c !== key) : [...without, key];
+    });
+    setSaved(false);
+  };
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -70,6 +94,7 @@ export default function ICPEditor({ icp }: { icp: ICPDocument | null }) {
         objections: textToArr(form.objections),
         buying_triggers: textToArr(form.buying_triggers),
         competitors: textToArr(form.competitors),
+        preferred_channels: channels,
       };
       const res = await fetch("/api/icp", {
         method: "PUT",
@@ -278,6 +303,51 @@ export default function ICPEditor({ icp }: { icp: ICPDocument | null }) {
             <textarea style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} value={form.competitors} onChange={(e) => set("competitors", e.target.value)} placeholder={"Konkurrent AB\nAnnan aktör\nAtt inte göra något (status quo)"} />
             <p style={hintStyle}>En per rad</p>
           </div>
+        </div>
+
+        {/* ─── Föredragna kanaler ─── */}
+        <div style={sectionStyle}>
+          <div style={sectionTitle}>📡 Föredragna marknadsföringskanaler</div>
+          <p style={{ fontSize: "0.83rem", color: "#6b7280", marginBottom: "1.25rem", lineHeight: 1.5 }}>
+            Vilka kanaler planerar du att använda? AI:n anpassar din handlingsplan baserat på ditt val.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "0.6rem" }}>
+            {CHANNEL_OPTIONS.map((ch) => {
+              const selected = channels.includes(ch.key);
+              return (
+                <button
+                  key={ch.key}
+                  type="button"
+                  onClick={() => toggleChannel(ch.key)}
+                  style={{
+                    background: selected ? "rgba(99,102,241,0.15)" : "#1a1a1e",
+                    border: `1px solid ${selected ? "rgba(99,102,241,0.55)" : "rgba(255,255,255,0.07)"}`,
+                    borderRadius: 10,
+                    padding: "0.65rem 0.85rem",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    color: selected ? "#a5b4fc" : "#9ca3af",
+                    fontSize: "0.85rem",
+                    fontWeight: selected ? 700 : 500,
+                    fontFamily: "inherit",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <span>{ch.emoji}</span>
+                  <span>{ch.label}</span>
+                  {selected && <span style={{ marginLeft: "auto", fontSize: "0.7rem" }}>✓</span>}
+                </button>
+              );
+            })}
+          </div>
+          {channels.length > 0 && !channels.includes("Vet ej") && (
+            <p style={{ fontSize: "0.78rem", color: "#6366f1", marginTop: "0.75rem", fontWeight: 600 }}>
+              ✓ Valt: {channels.join(", ")} — din handlingsplan anpassas till dessa kanaler
+            </p>
+          )}
         </div>
 
         {/* Save bar */}
